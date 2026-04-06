@@ -273,22 +273,6 @@ elif page == "PCA Analysis":
         pca_df["Continent"] = filtered_df["Continent"].reset_index(drop=True)
 
     st.markdown("PCA helps reduce the dimensionality to show underlying patterns and clusters of countries based on all socioeconomic and macroeconomic indicators.")
-
-    fig_pca = px.scatter(
-        pca_df,
-        x="PC1",
-        y="PC2",
-        color="Continent" if "Continent" in pca_df.columns else "Status",
-        hover_name="Country",
-        template="plotly_dark",
-        title="2D Plot of the First Two Principal Components"
-    )
-    st.plotly_chart(fig_pca, use_container_width=True)
-
-    explained_variance = pca.explained_variance_ratio_
-    st.info(f"**Variance Explained (2D Plot):** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | Total: {explained_variance.sum():.2%}")
-
-    st.markdown("---")
     st.subheader("🔍 Covariance Matrix")
     
     cov_matrix = np.cov(X_scaled, rowvar=False)
@@ -344,6 +328,23 @@ elif page == "PCA Analysis":
         "before feeding it to our machine learning model. \n\n"
         "**Chosen Model**: `RandomForestRegressor` (An ensemble learning method for regression that operates by constructing a multitude of decision trees)."
     )
+
+    st.markdown("---")
+    st.subheader("🌐 2D Projection of Principal Components")
+
+    fig_pca = px.scatter(
+        pca_df,
+        x="PC1",
+        y="PC2",
+        color="Continent" if "Continent" in pca_df.columns else "Status",
+        hover_name="Country",
+        template="plotly_dark",
+        title="2D Plot of the First Two Principal Components"
+    )
+    st.plotly_chart(fig_pca, use_container_width=True)
+
+    explained_variance = pca.explained_variance_ratio_
+    st.info(f"**Variance Explained (2D Plot):** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | Total: {explained_variance.sum():.2%}")
 
 
 # =====================================================
