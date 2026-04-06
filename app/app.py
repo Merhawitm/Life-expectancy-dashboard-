@@ -259,10 +259,10 @@ elif page == "PCA Analysis":
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X_imputed)
 
-    pca = PCA(n_components=2)
+    pca = PCA(n_components=3)
     components = pca.fit_transform(X_scaled)
 
-    pca_df = pd.DataFrame(data=components, columns=["PC1", "PC2"])
+    pca_df = pd.DataFrame(data=components, columns=["PC1", "PC2", "PC3"])
     
     # Ensuring categorical data for hover and color
     # Reset indices to safely merge array slices back to dataframe
@@ -344,7 +344,24 @@ elif page == "PCA Analysis":
     st.plotly_chart(fig_pca, use_container_width=True)
 
     explained_variance = pca.explained_variance_ratio_
-    st.info(f"**Variance Explained (2D Plot):** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | Total: {explained_variance.sum():.2%}")
+    st.info(f"**Variance Explained (2D Plot):** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | Total: {explained_variance[:2].sum():.2%}")
+
+    st.markdown("---")
+    st.subheader("🧊 3D Projection of Principal Components")
+
+    fig_pca_3d = px.scatter_3d(
+        pca_df,
+        x="PC1",
+        y="PC2",
+        z="PC3",
+        color="Continent" if "Continent" in pca_df.columns else "Status",
+        hover_name="Country",
+        template="plotly_dark",
+        title="3D Plot of the First Three Principal Components"
+    )
+    st.plotly_chart(fig_pca_3d, use_container_width=True)
+
+    st.info(f"**Variance Explained (3D Plot):** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | PC3 ({explained_variance[2]:.2%}) | Total: {explained_variance[:3].sum():.2%}")
 
 
 # =====================================================
