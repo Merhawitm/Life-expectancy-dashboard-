@@ -32,7 +32,7 @@ st.sidebar.title("🧭 Navigation")
 
 page = st.sidebar.radio(
     "Go to",
-    ["Overview", "Global Insights", "Comparisons", "PCA Analysis", "Model Comparison", "Prediction"]
+    ["Overview", "Global Insights", "Comparisons", "PCA Analysis", "Advanced Analysis", "Model Comparison", "Prediction"]
 )
 
 # -------------------------
@@ -363,6 +363,120 @@ elif page == "PCA Analysis":
 
     st.info(f"**Variance Explained (3D Plot):** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | PC3 ({explained_variance[2]:.2%}) | Total: {explained_variance[:3].sum():.2%}")
 
+
+# =====================================================
+# 🔬 ADVANCED ANALYSIS (CLUSTERING & LDA)
+# =====================================================
+elif page == "Advanced Analysis":
+
+    st.subheader("🔬 Advanced Analysis: Clustering & Discriminant Analysis")
+
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.impute import SimpleImputer
+    from sklearn.cluster import KMeans
+    from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+    from sklearn.decomposition import PCA
+
+    filtered_df = base_df.copy()
+    numeric_df = filtered_df.select_dtypes(include=np.number)
+    
+    if "Life expectancy" in numeric_df.columns:
+        X = numeric_df.drop(columns=["Life expectancy"])
+    else:
+        X = numeric_df
+
+    # Impute missing values & Scale
+    imputer = SimpleImputer(strategy="mean")
+    X_imputed = imputer.fit_transform(X)
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X_imputed)
+
+    # -------------------------
+    # K-MEANS CLUSTERING
+    # -------------------------
+    st.markdown("---")
+    st.subheader("🟢 K-Means Clustering")
+    st.markdown("Unsupervised learning algorithm that groups countries based on their socioeconomic similarities.")
+
+    k = st.slider("Select Number of Clusters (k):", min_value=2, max_value=8, value=3)
+
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    cluster_labels = kmeans.fit_predict(X_scaled)
+    
+    # We use PCA (2 components) solely for visualizing the high-dimensional clusters
+    pca = PCA(n_components=2)
+    components = pca.fit_transform(X_scaled)
+    
+    cluster_df = pd.DataFrame(data=components, columns=["PC1", "PC2"])
+    cluster_df["Cluster"] = [f"Cluster {i+1}" for i in cluster_labels]
+    cluster_df["Country"] = filtered_df["Country"].reset_index(drop=True)
+
+    fig_cluster = px.scatter(
+        cluster_df,
+        x="PC1",
+        y="PC2",
+        color="Cluster",
+        hover_name="Country",
+        template="plotly_dark",
+        title=f"K-Means Clustering (k={k}) Visualized in 2D PCA Space",
+        color_discrete_sequence=px.colors.qualitative.Safe
+    )
+    st.plotly_chart(fig_cluster, use_container_width=True)
+
+    # -------------------------
+    # LINEAR DISCRIMINANT ANALYSIS (LDA)
+    # -------------------------
+    st.markdown("---")
+    st.subheader("🎯 Linear Discriminant Analysis (LDA)")
+    st.markdown("Supervised dimensionality reduction aimed at maximizing the separation between known categories.")
+
+    target_col = st.selectbox("Select Target Variable for LDA:", ["Status", "Continent"])
+
+    if target_col in filtered_df.columns:
+        y_target = filtered_df[target_col].reset_index(drop=True)
+        # Drop NaNs in target safely
+        valid_idx = y_target.notna()
+        X_lda = X_scaled[valid_idx]
+        y_valid = y_target[valid_idx]
+
+        lda = LinearDiscriminantAnalysis()
+        lda_components = lda.fit_transform(X_lda, y_valid)
+
+        lda_df = pd.DataFrame({"Country": filtered_df["Country"].reset_index(drop=True)[valid_idx], "Class": y_valid})
+
+        # If binary class (e.g., Status), LDA outputs 1 Dimension
+        if lda_components.shape[1] == 1:
+            lda_df["LD1"] = lda_components[:, 0]
+            fig_lda = px.histogram(
+                lda_df, 
+                x="LD1", 
+                color="Class", 
+                template="plotly_dark", 
+                title=f"1D LDA Projection separating {target_col}",
+                barmode="overlay",
+                hover_data=["Country"]
+            )
+            fig_lda.update_traces(opacity=0.75)
+        # If multi-class (e.g., Continent), LDA outputs multiple dimensions
+        else:
+            lda_df["LD1"] = lda_components[:, 0]
+            lda_df["LD2"] = lda_components[:, 1]
+            fig_lda = px.scatter(
+                lda_df,
+                x="LD1",
+                y="LD2",
+                color="Class",
+                hover_name="Country",
+                template="plotly_dark",
+                title=f"2D LDA Projection separating {target_col}"
+            )
+        
+        st.plotly_chart(fig_lda, use_container_width=True)
+        st.info(f"LDA successfully extracted {lda_components.shape[1]} linear discriminant(s) to separate the **{target_col}** classes.")
+
+    else:
+        st.error(f"Cannot perform LDA: '{target_col}' column is missing from the dataset.")
 
 # =====================================================
 # 📊 MODEL COMPARISON
