@@ -32,7 +32,7 @@ st.sidebar.title("🧭 Navigation")
 
 page = st.sidebar.radio(
     "Go to",
-    ["Overview", "Global Insights", "Comparisons", "Prediction"]
+    ["Overview", "Global Insights", "Comparisons", "PCA Analysis", "Prediction"]
 )
 
 # -------------------------
@@ -117,15 +117,19 @@ elif page == "Global Insights":
 
     st.subheader("💰 GDP vs Life Expectancy")
 
+    plot_df = filtered_df.copy()
+    plot_df["Population"] = np.ceil(plot_df["Population"]).astype(int)
+
     fig2 = px.scatter(
-        filtered_df,
+        plot_df,
         x="GDP",
         y="Life expectancy",
         color="Status",
         size="Population",
         hover_name="Country",
         animation_frame="Year",
-        template="plotly_dark"
+        template="plotly_dark",
+        size_max=60
     )
 
     st.plotly_chart(fig2, use_container_width=True)
@@ -225,6 +229,60 @@ elif page == "Comparisons":
 
     fig5 = px.line(cdf, x="Year", y="Life expectancy", markers=True, template="plotly_dark")
     st.plotly_chart(fig5, use_container_width=True)
+
+# =====================================================
+# 📉 PCA ANALYSIS
+# =====================================================
+elif page == "PCA Analysis":
+
+    st.subheader("📉 Principal Component Analysis")
+
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.decomposition import PCA
+
+    # -------------------------
+    # PREPARE DATA
+    # -------------------------
+    filtered_df = base_df.copy()
+    numeric_df = filtered_df.select_dtypes(include=np.number)
+
+    if "Life expectancy" in numeric_df.columns:
+        X = numeric_df.drop(columns=["Life expectancy"])
+    else:
+        X = numeric_df
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    pca = PCA(n_components=2)
+    components = pca.fit_transform(X_scaled)
+
+    pca_df = pd.DataFrame(data=components, columns=["PC1", "PC2"])
+    
+    # Ensuring categorical data for hover and color
+    # Reset indices to safely merge array slices back to dataframe
+    pca_df["Country"] = filtered_df["Country"].reset_index(drop=True)
+    if "Status" in filtered_df.columns:
+        pca_df["Status"] = filtered_df["Status"].reset_index(drop=True)
+    if "Continent" in filtered_df.columns:
+        pca_df["Continent"] = filtered_df["Continent"].reset_index(drop=True)
+
+    st.markdown("PCA helps reduce the dimensionality to show underlying patterns and clusters of countries based on all socioeconomic and macroeconomic indicators.")
+
+    fig_pca = px.scatter(
+        pca_df,
+        x="PC1",
+        y="PC2",
+        color="Continent" if "Continent" in pca_df.columns else "Status",
+        hover_name="Country",
+        template="plotly_dark",
+        title="2D Plot of the First Two Principal Components"
+    )
+    st.plotly_chart(fig_pca, use_container_width=True)
+
+    explained_variance = pca.explained_variance_ratio_
+    st.info(f"**Variance Explained:** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | Total: {explained_variance.sum():.2%}")
+
 
 # =====================================================
 # 🔮 PREDICTION (COUNTRY REQUIRED)
