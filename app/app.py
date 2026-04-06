@@ -32,7 +32,7 @@ st.sidebar.title("🧭 Navigation")
 
 page = st.sidebar.radio(
     "Go to",
-    ["Overview", "Global Insights", "Comparisons", "PCA Analysis", "Prediction"]
+    ["Overview", "Global Insights", "Comparisons", "PCA Analysis", "Model Comparison", "Prediction"]
 )
 
 # -------------------------
@@ -346,6 +346,89 @@ elif page == "PCA Analysis":
     explained_variance = pca.explained_variance_ratio_
     st.info(f"**Variance Explained (2D Plot):** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | Total: {explained_variance.sum():.2%}")
 
+
+# =====================================================
+# 📊 MODEL COMPARISON
+# =====================================================
+elif page == "Model Comparison":
+
+    st.subheader("📊 Regression Models Comparison")
+    st.markdown("We evaluate multiple machine learning algorithms using our 5 Principal Components.")
+
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import mean_squared_error, r2_score
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.decomposition import PCA
+    from sklearn.impute import SimpleImputer
+    from sklearn.linear_model import LinearRegression
+    from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+    from sklearn.tree import DecisionTreeRegressor
+
+    filtered_df = base_df.copy()
+    numeric_df = filtered_df.select_dtypes(include=np.number)
+    
+    if "Life expectancy" in numeric_df.columns:
+        X = numeric_df.drop(columns=["Life expectancy"])
+        y = numeric_df["Life expectancy"]
+    else:
+        st.error("Life expectancy column not found!")
+        st.stop()
+
+    # Preprocessing
+    imputer = SimpleImputer(strategy="mean")
+    X_imputed = imputer.fit_transform(X)
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X_imputed)
+
+    pca = PCA(n_components=5)
+    X_pca = pca.fit_transform(X_scaled)
+
+    # Train Test Split
+    X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=42)
+
+    models = {
+        "Linear Regression": LinearRegression(),
+        "Decision Tree": DecisionTreeRegressor(random_state=42),
+        "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
+        "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42)
+    }
+
+    results = []
+    
+    with st.spinner("Training models for comparison..."):
+        for name, model in models.items():
+            model.fit(X_train, y_train)
+            preds = model.predict(X_test)
+            r2 = r2_score(y_test, preds)
+            rmse = np.sqrt(mean_squared_error(y_test, preds))
+            results.append({"Model": name, "R² Score": r2, "RMSE": rmse})
+            
+    results_df = pd.DataFrame(results).sort_values(by="R² Score", ascending=False)
+    
+    col1, col2 = st.columns((1, 1.5))
+    
+    with col1:
+        st.write("**Model Performance Metrics**")
+        st.dataframe(results_df.style.format({"R² Score": "{:.4f}", "RMSE": "{:.4f}"}), use_container_width=True)
+        
+    with col2:
+        fig = px.bar(
+            results_df,
+            x="R² Score",
+            y="Model",
+            orientation="h",
+            color="R² Score",
+            text="R² Score",
+            template="plotly_dark",
+            title="Model Accuracy (R² Score) Comparison",
+            color_continuous_scale="Blues"
+        )
+        fig.update_traces(texttemplate='%{text:.3f}', textposition='auto')
+        fig.update_layout(yaxis={'categoryorder':'total ascending'})
+        st.plotly_chart(fig, use_container_width=True)
+        
+    st.info(f"🏆 The **{results_df.iloc[0]['Model']}** achieved the highest accuracy!")
 
 # =====================================================
 # 🔮 PREDICTION (COUNTRY REQUIRED)
