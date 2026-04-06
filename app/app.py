@@ -28,7 +28,7 @@ df = load_data()
 # -------------------------
 # SIDEBAR NAVIGATION
 # -------------------------
-st.sidebar.title("🧭 Navigation")
+st.sidebar.title("Navigation")
 
 page = st.sidebar.radio(
     "Go to",
@@ -39,7 +39,7 @@ page = st.sidebar.radio(
 # CONTINENT FILTER (GLOBAL)
 # -------------------------
 continents = ["All"] + sorted(df["Continent"].unique())
-selected_continent = st.sidebar.selectbox("🌍 Continent", continents)
+selected_continent = st.sidebar.selectbox("Continent", continents)
 
 if selected_continent != "All":
     base_df = df[df["Continent"] == selected_continent]
@@ -49,7 +49,7 @@ else:
 # -------------------------
 # HEADER
 # -------------------------
-st.title("🌍 Global Life Expectancy Dashboard")
+st.title("Global Life Expectancy Dashboard")
 st.markdown("### Insight-driven analytics (Power BI style)")
 
 # -------------------------
@@ -60,9 +60,9 @@ avg_gdp = round(base_df["GDP"].mean(), 2)
 countries_count = base_df["Country"].nunique()
 
 c1, c2, c3 = st.columns(3)
-c1.metric("🌱 Avg Life Expectancy", avg_life)
-c2.metric("💰 Avg GDP", f"{avg_gdp:,.0f}")
-c3.metric("🌍 Countries", countries_count)
+c1.metric("Avg Life Expectancy", avg_life)
+c2.metric("Avg GDP", f"{avg_gdp:,.0f}")
+c3.metric("Countries", countries_count)
 
 st.markdown("---")
 
@@ -71,10 +71,10 @@ st.markdown("---")
 # =====================================================
 if page == "Overview":
 
-    st.subheader("📊 Dataset Preview")
+    st.subheader("Dataset Preview")
     st.dataframe(base_df.head())
 
-    st.subheader("🌐 Global Distribution")
+    st.subheader("Global Distribution")
 
     fig = px.histogram(
         base_df,
@@ -83,8 +83,9 @@ if page == "Overview":
         template="plotly_dark"
     )
     st.plotly_chart(fig, use_container_width=True)
+    st.caption("**How to read this:** This histogram shows the distribution of life expectancy across the dataset. Taller bars indicate that more countries fall into that specific life expectancy range.")
 
-    st.subheader("📥 Download Summary")
+    st.subheader("Download Summary")
     report = build_summary_report(base_df, selected_continent, "All")
     st.download_button("Download Report", report, file_name="report.txt")
 
@@ -95,7 +96,7 @@ elif page == "Global Insights":
 
     filtered_df = base_df  # 🚫 No country filtering here
 
-    st.subheader("🏆 Top vs Bottom Countries")
+    st.subheader("Top vs Bottom Countries")
 
     country_avg = filtered_df.groupby("Country")["Life expectancy"].mean().sort_values()
 
@@ -114,8 +115,9 @@ elif page == "Global Insights":
     )
 
     st.plotly_chart(fig, use_container_width=True)
+    st.caption("**How to read this:** The top 5 bars represent the countries with the highest average life expectancy, and the bottom 5 represent the lowest. Longer bars flowing to the right mean a higher life expectancy.")
 
-    st.subheader("💰 GDP vs Life Expectancy")
+    st.subheader("GDP vs Life Expectancy")
 
     plot_df = filtered_df.copy()
     plot_df["Population"] = np.ceil(plot_df["Population"]).astype(int)
@@ -133,8 +135,9 @@ elif page == "Global Insights":
     )
 
     st.plotly_chart(fig2, use_container_width=True)
+    st.caption("**How to read this:** Each bubble is a country. Its position on the horizontal axis shows its GDP, and the vertical axis shows life expectancy. Larger bubbles mean a larger population. Press 'Play' to see changes over the years.")
 
-    st.subheader("🌍 World Map")
+    st.subheader("World Map")
 
     fig3 = px.choropleth(
         filtered_df,
@@ -146,6 +149,7 @@ elif page == "Global Insights":
     )
 
     st.plotly_chart(fig3, use_container_width=True)
+    st.caption("**How to read this:** The map colors countries based on their life expectancy. Hover over a country to see exact numbers. Brighter or different shades indicate higher/lower life expectancy. Press 'Play' to watch it evolve over time.")
 
 # =====================================================
 # 📊 COMPARISONS (OPTIONAL COUNTRY FILTER)
@@ -162,7 +166,7 @@ elif page == "Comparisons":
     else:
         filtered_df = base_df
 
-    st.subheader("🎯 Developed vs Developing Comparison")
+    st.subheader("Developed vs Developing Comparison")
 
     if "Status" in filtered_df.columns:
 
@@ -193,10 +197,12 @@ elif page == "Comparisons":
             )
             fig_gdp.update_layout(yaxis_title="USD", showlegend=False)
             st.plotly_chart(fig_gdp, use_container_width=True)
+            
+        st.caption("**How to read this:** These two bar charts compare the average values of Developed versus Developing countries side by side. Higher bars mean a higher average.")
 
         # Insights
         st.markdown("---")
-        st.subheader("📌 Key Insights")
+        st.subheader("Key Insights")
 
         try:
             d_life = status_group.loc["Developed"]["Life expectancy"]
@@ -214,14 +220,15 @@ elif page == "Comparisons":
 
     st.markdown("---")
 
-    st.subheader("🌍 Life Expectancy by Continent")
+    st.subheader("Life Expectancy by Continent")
 
     cont = filtered_df.groupby("Continent")["Life expectancy"].mean().reset_index()
 
     fig4 = px.bar(cont, x="Continent", y="Life expectancy", color="Continent", template="plotly_dark")
     st.plotly_chart(fig4, use_container_width=True)
+    st.caption("**How to read this:** Each bar represents a different continent. The height shows the average life expectancy for all countries within that continent.")
 
-    st.subheader("📈 Country Trend")
+    st.subheader("Country Trend")
 
     country = st.selectbox("Select Country", filtered_df["Country"].unique())
 
@@ -229,13 +236,14 @@ elif page == "Comparisons":
 
     fig5 = px.line(cdf, x="Year", y="Life expectancy", markers=True, template="plotly_dark")
     st.plotly_chart(fig5, use_container_width=True)
+    st.caption("**How to read this:** This line graph tracks a single country's life expectancy over time. A line going up from left to right means life expectancy is improving.")
 
 # =====================================================
 # 📉 PCA ANALYSIS
 # =====================================================
 elif page == "PCA Analysis":
 
-    st.subheader("📉 Principal Component Analysis")
+    st.subheader("Principal Component Analysis")
 
     from sklearn.preprocessing import StandardScaler
     from sklearn.decomposition import PCA
@@ -273,7 +281,7 @@ elif page == "PCA Analysis":
         pca_df["Continent"] = filtered_df["Continent"].reset_index(drop=True)
 
     st.markdown("PCA helps reduce the dimensionality to show underlying patterns and clusters of countries based on all socioeconomic and macroeconomic indicators.")
-    st.subheader("🔍 Covariance Matrix")
+    st.subheader("Covariance Matrix")
     
     cov_matrix = np.cov(X_scaled, rowvar=False)
     fig_cov = px.imshow(
@@ -286,10 +294,11 @@ elif page == "PCA Analysis":
     )
     fig_cov.update_layout(width=700, height=700)
     st.plotly_chart(fig_cov, use_container_width=True)
+    st.caption("**How to read this:** This heatmap shows how much our numerical features correlate with one another. Red squares mean positive correlation, blue squares mean negative correlation, and darker colors mean stronger relationships.")
 
     # === FULL PCA FOR ELBOW PLOT AND EIGEN VALUES ===
     st.markdown("---")
-    st.subheader("📐 Eigenvalues & Elbow Plot")
+    st.subheader("Eigenvalues & Elbow Plot")
     
     full_pca = PCA()
     full_pca.fit(X_scaled)
@@ -320,9 +329,10 @@ elif page == "PCA Analysis":
         )
         fig_elbow.add_vline(x=5, line_dash="dash", line_color="red", annotation_text="Chosen PCs (5)")
         st.plotly_chart(fig_elbow, use_container_width=True)
+        st.caption("**How to read this:** This 'Scree plot' line graph shows how much cumulative data (variance) we retain as we add more components. The red line dictates our cutoff choice ('elbow'), balancing dimension reduction without losing too much data.")
 
     st.markdown("---")
-    st.subheader("🤖 Model Selection & Configuration")
+    st.subheader("Model Selection & Configuration")
     st.success(
         "Based on the Elbow plot and variance retention, we compress the data to **5 Principal Components** "
         "before feeding it to our machine learning model. \n\n"
@@ -330,7 +340,7 @@ elif page == "PCA Analysis":
     )
 
     st.markdown("---")
-    st.subheader("🌐 2D Projection of Principal Components")
+    st.subheader("2D Projection of Principal Components")
 
     fig_pca = px.scatter(
         pca_df,
@@ -342,12 +352,13 @@ elif page == "PCA Analysis":
         title="2D Plot of the First Two Principal Components"
     )
     st.plotly_chart(fig_pca, use_container_width=True)
+    st.caption("**How to read this:** This scatter plot maps high-dimensional data onto a 2D surface. Features that are close together are similar in real life. We color them differently to see if our original categories naturally separate.")
 
     explained_variance = pca.explained_variance_ratio_
     st.info(f"**Variance Explained (2D Plot):** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | Total: {explained_variance[:2].sum():.2%}")
 
     st.markdown("---")
-    st.subheader("🧊 3D Projection of Principal Components")
+    st.subheader("3D Projection of Principal Components")
 
     fig_pca_3d = px.scatter_3d(
         pca_df,
@@ -360,6 +371,7 @@ elif page == "PCA Analysis":
         title="3D Plot of the First Three Principal Components"
     )
     st.plotly_chart(fig_pca_3d, use_container_width=True)
+    st.caption("**How to read this:** Just like the 2D projection, but introducing a third component (PC3) as depth. You can click and drag to rotate the plot and observe how the data clusters in 3D space.")
 
     st.info(f"**Variance Explained (3D Plot):** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | PC3 ({explained_variance[2]:.2%}) | Total: {explained_variance[:3].sum():.2%}")
 
@@ -369,7 +381,7 @@ elif page == "PCA Analysis":
 # =====================================================
 elif page == "Advanced Analysis":
 
-    st.subheader("🔬 Advanced Analysis: Clustering & Discriminant Analysis")
+    st.subheader("Advanced Analysis: Clustering & Discriminant Analysis")
 
     from sklearn.preprocessing import StandardScaler
     from sklearn.impute import SimpleImputer
@@ -396,7 +408,7 @@ elif page == "Advanced Analysis":
     # K-MEANS CLUSTERING
     # -------------------------
     st.markdown("---")
-    st.subheader("🟢 K-Means Clustering")
+    st.subheader("K-Means Clustering")
     st.markdown("Unsupervised learning algorithm that groups countries based on their socioeconomic similarities.")
 
     k = st.slider("Select Number of Clusters (k):", min_value=2, max_value=8, value=3)
@@ -423,12 +435,13 @@ elif page == "Advanced Analysis":
         color_discrete_sequence=px.colors.qualitative.Safe
     )
     st.plotly_chart(fig_cluster, use_container_width=True)
+    st.caption("**How to read this:** This scatter plot reveals clusters of mathematically similar countries. The algorithm assigned the colors purely based on socioeconomic stats, without knowing their actual continent or status. Distinct groupings imply strong relationships.")
 
     # -------------------------
     # LINEAR DISCRIMINANT ANALYSIS (LDA)
     # -------------------------
     st.markdown("---")
-    st.subheader("🎯 Linear Discriminant Analysis (LDA)")
+    st.subheader("Linear Discriminant Analysis (LDA)")
     st.markdown("Supervised dimensionality reduction aimed at maximizing the separation between known categories.")
 
     target_col = st.selectbox("Select Target Variable for LDA:", ["Status", "Continent"])
@@ -458,6 +471,8 @@ elif page == "Advanced Analysis":
                 hover_data=["Country"]
             )
             fig_lda.update_traces(opacity=0.75)
+            st.plotly_chart(fig_lda, use_container_width=True)
+            st.caption("**How to read this:** This overlapping histogram shows how well the algorithm separated our two classes into a single dimension. Less overlap between colors means the classes are highly distinct based on the data.")
         # If multi-class (e.g., Continent), LDA outputs multiple dimensions
         else:
             lda_df["LD1"] = lda_components[:, 0]
@@ -471,8 +486,9 @@ elif page == "Advanced Analysis":
                 template="plotly_dark",
                 title=f"2D LDA Projection separating {target_col}"
             )
+            st.plotly_chart(fig_lda, use_container_width=True)
+            st.caption("**How to read this:** This scatter plot projects the data onto the components that maximize the separation between our classes. Distinct groupings of the same color indicate good separability.")
         
-        st.plotly_chart(fig_lda, use_container_width=True)
         st.info(f"LDA successfully extracted {lda_components.shape[1]} linear discriminant(s) to separate the **{target_col}** classes.")
 
     else:
@@ -483,7 +499,7 @@ elif page == "Advanced Analysis":
 # =====================================================
 elif page == "Model Comparison":
 
-    st.subheader("📊 Regression Models Comparison")
+    st.subheader("Regression Models Comparison")
     st.markdown("We evaluate multiple machine learning algorithms using our 5 Principal Components.")
 
     from sklearn.model_selection import train_test_split
@@ -558,6 +574,7 @@ elif page == "Model Comparison":
         fig.update_traces(texttemplate='%{text:.3f}', textposition='auto')
         fig.update_layout(yaxis={'categoryorder':'total ascending'})
         st.plotly_chart(fig, use_container_width=True)
+        st.caption("**How to read this:** The R² Score measures how well the model predicts life expectancy. A score of 1.0 means perfect accuracy. The longest bar represents the best-performing model.")
         
     st.info(f"🏆 The **{results_df.iloc[0]['Model']}** achieved the highest accuracy!")
 
@@ -568,7 +585,7 @@ elif page == "Prediction":
 
     filtered_df = base_df
 
-    st.subheader("🔮 Predict Life Expectancy")
+    st.subheader("Predict Life Expectancy")
 
     numeric_cols = filtered_df.select_dtypes(include=np.number).columns.tolist()
     numeric_cols.remove("Life expectancy")
