@@ -239,6 +239,7 @@ elif page == "PCA Analysis":
 
     from sklearn.preprocessing import StandardScaler
     from sklearn.decomposition import PCA
+    from sklearn.impute import SimpleImputer
 
     # -------------------------
     # PREPARE DATA
@@ -251,8 +252,12 @@ elif page == "PCA Analysis":
     else:
         X = numeric_df
 
+    # Impute missing values
+    imputer = SimpleImputer(strategy="mean")
+    X_imputed = imputer.fit_transform(X)
+
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+    X_scaled = scaler.fit_transform(X_imputed)
 
     pca = PCA(n_components=2)
     components = pca.fit_transform(X_scaled)
