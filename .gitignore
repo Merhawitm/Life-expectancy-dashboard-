@@ -1,0 +1,11 @@
+---
+
+# 🔷 2. `.gitignore`
+
+```txt
+__pycache__/
+*.pyc
+.env
+*.pkl
+.DS_Store
+.ipynb_checkpoints
