@@ -286,7 +286,64 @@ elif page == "PCA Analysis":
     st.plotly_chart(fig_pca, use_container_width=True)
 
     explained_variance = pca.explained_variance_ratio_
-    st.info(f"**Variance Explained:** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | Total: {explained_variance.sum():.2%}")
+    st.info(f"**Variance Explained (2D Plot):** PC1 ({explained_variance[0]:.2%}) | PC2 ({explained_variance[1]:.2%}) | Total: {explained_variance.sum():.2%}")
+
+    st.markdown("---")
+    st.subheader("🔍 Covariance Matrix")
+    
+    cov_matrix = np.cov(X_scaled, rowvar=False)
+    fig_cov = px.imshow(
+        cov_matrix, 
+        x=X.columns, 
+        y=X.columns, 
+        color_continuous_scale='RdBu_r',
+        title="Predictor Covariance Matrix",
+        template='plotly_dark'
+    )
+    fig_cov.update_layout(width=700, height=700)
+    st.plotly_chart(fig_cov, use_container_width=True)
+
+    # === FULL PCA FOR ELBOW PLOT AND EIGEN VALUES ===
+    st.markdown("---")
+    st.subheader("📐 Eigenvalues & Elbow Plot")
+    
+    full_pca = PCA()
+    full_pca.fit(X_scaled)
+    
+    # Eigen Values
+    eigen_values = full_pca.explained_variance_
+    eigen_df = pd.DataFrame({
+        "Component": [f"PC{i+1}" for i in range(len(eigen_values))],
+        "Eigenvalue": eigen_values,
+        "Variance Ratio": full_pca.explained_variance_ratio_,
+        "Cumulative Variance": np.cumsum(full_pca.explained_variance_ratio_)
+    })
+    
+    col1, col2 = st.columns((1, 1.5))
+    with col1:
+        st.write("**Top 10 Eigenvalues**")
+        st.dataframe(eigen_df.head(10).style.format({"Eigenvalue": "{:.2f}", "Variance Ratio": "{:.2%}", "Cumulative Variance": "{:.2%}"}))
+        
+    with col2:
+        # Elbow plot
+        fig_elbow = px.line(
+            x=range(1, len(full_pca.explained_variance_ratio_) + 1),
+            y=np.cumsum(full_pca.explained_variance_ratio_),
+            markers=True,
+            labels={'x': 'Number of Components', 'y': 'Cumulative Explained Variance'},
+            title='Scree Plot (Elbow Method)',
+            template='plotly_dark'
+        )
+        fig_elbow.add_vline(x=5, line_dash="dash", line_color="red", annotation_text="Chosen PCs (5)")
+        st.plotly_chart(fig_elbow, use_container_width=True)
+
+    st.markdown("---")
+    st.subheader("🤖 Model Selection & Configuration")
+    st.success(
+        "Based on the Elbow plot and variance retention, we compress the data to **5 Principal Components** "
+        "before feeding it to our machine learning model. \n\n"
+        "**Chosen Model**: `RandomForestRegressor` (An ensemble learning method for regression that operates by constructing a multitude of decision trees)."
+    )
 
 
 # =====================================================
